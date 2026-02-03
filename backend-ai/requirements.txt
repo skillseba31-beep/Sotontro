@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+httpx
+python-multipart
+pydantic
+pydantic-settings
+sqlalchemy
+psycopg2-binary
+alembic
+python-dotenv
+openai
+requests
+beautifulsoup4

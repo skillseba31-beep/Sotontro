@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  WORKER
+  CLIENT
+}
+
+enum ProjectStatus {
+  PENDING
+  ANALYZING
+  IN_PROGRESS
+  QA
+  DELIVERED
+}
+
+enum TaskStatus {
+  BACKLOG
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      Role     @default(CLIENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders           Order[]
+  assignedProjects Project[] @relation("WorkerProjects")
+  tasks            Task[]    @relation("UserTasks")
+  messages         Message[] @relation("UserMessages")
+}
+
+model Service {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  basePrice   Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  plans  Plan[]
+  orders Order[]
+}
+
+model Plan {
+  id        String   @id @default(uuid())
+  name      String
+  price     Float
+  serviceId String
+  service   Service  @relation(fields: [serviceId], references: [id])
+
+  orders Order[]
+}
+
+model Order {
+  id        String   @id @default(uuid())
+  amount    Float
+  status    String   @default("PENDING")
+  clientId  String
+  client    User     @relation(fields: [clientId], references: [id])
+  serviceId String
+  service   Service  @relation(fields: [serviceId], references: [id])
+  planId    String?
+  plan      Plan?    @relation(fields: [planId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project?
+}
+
+model Project {
+  id        String        @id @default(uuid())
+  status    ProjectStatus @default(PENDING)
+  orderId   String        @unique
+  order     Order         @relation(fields: [orderId], references: [id])
+  workerId  String?
+  worker    User?         @relation("WorkerProjects", fields: [workerId], references: [id])
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  tasks    Task[]
+  messages Message[]
+}
+
+model Task {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  status      TaskStatus @default(BACKLOG)
+  projectId   String
+  project     Project    @relation(fields: [projectId], references: [id])
+  assignedTo  String?
+  assignee    User?      @relation("UserTasks", fields: [assignedTo], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  content   String
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id])
+  senderId  String
+  sender    User     @relation("UserMessages", fields: [senderId], references: [id])
+  createdAt DateTime @default(now())
+}
